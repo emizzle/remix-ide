@@ -92,7 +92,7 @@ export class LandingPage extends ApiFactory {
 
   get profile () {
     return {
-      displayName: 'home',
+      displayName: 'Home',
       name: 'home',
       methods: [],
       events: [],
