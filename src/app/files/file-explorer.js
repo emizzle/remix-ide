@@ -63,8 +63,6 @@ function fileExplorer (localRegistry, files, menuItems) {
     fileManager: self._components.registry.get('filemanager').api
   }
 
-  self._components.registry.put(`fileexplorer${files.type}`, this)
-
   // warn if file changed outside of Remix
   function remixdDialog () {
     return yo`<div>This file has been changed outside of Remix IDE.</div>`
