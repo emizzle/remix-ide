@@ -21,11 +21,19 @@ module.exports = class SettingsTab {
       editor: self._components.registry.get('editor').api,
       appManager: self._components.registry.get('appmanager').api
     }
+    // TODO: update the self.view.theme object with everyone from theme-chooser
+    // I: the current null gets filled with the html for the checkbox
+    // Q: couldn't theme: {}  get all filled in below?
+
+    // Q: what does the self.config.themes do?
+
+    // Q: what is the default them when no theme is chosen?? lets start with 'basic'
+
     self._view = { /* eslint-disable */
       el: null,
       optionVM: null, personal: null, warnPersonalMode: null, generateContractMetadata: null,
       pluginInput: null, versionSelector: null, version: null,
-      theme: { dark: null, light: null, clean: null },
+      themes: null,
       plugins: {},
       config: {
         general: null, themes: null,
@@ -35,7 +43,8 @@ module.exports = class SettingsTab {
     self.data = {}
     self.event = new EventManager()
     self._components.themeStorage = new Storage('style:')
-    self.data.currentTheme = self._components.themeStorage.get('theme') || 'light'
+    // TODO check to make sure that the current theme exists before saving it in self.data
+    self.data.currentTheme = self._components.themeStorage.get('theme') || 'basic'
   }
   profile () {
     return {
@@ -47,6 +56,28 @@ module.exports = class SettingsTab {
       description: ' - ',
       kind: 'settings'
     }
+  }
+  createThemeCheckies () {
+    // does the list of themes exist
+    const self = this
+    
+    if (self._view.themes) {
+      return yo`<div class="card-text themes-container">
+        ${self._view.themes.map(function (aTheme) {
+          return yo`<div class="${css.frow} form-check ${css.crow}">
+          <input onchange=${onswitchTheme(aTheme.name)} class="align-middle form-check-input" name="${aTheme.name}" id="${aTheme.name}" type="radio">
+          <label class="form-check-label" for="themeLight">${aTheme.name} (${aTheme.quality})</label>
+        </div>`
+        })}
+      </div>`
+    }
+  }
+  isThere (name) {
+    const self = this
+    // its complaining that it cant find self._view.themes  ( uncomment next 2 lines)
+    return self._view.themes.find(obj => {
+      return obj.name === name
+    })
   }
   render () {
     const self = this
@@ -76,10 +107,20 @@ module.exports = class SettingsTab {
 
     self._view.pluginInput = yo`<textarea rows="4" cols="70" id="plugininput" type="text" class="${css.pluginTextArea}" ></textarea>`
 
-    self._view.theme.light = yo`<input onchange=${onswitch2lightTheme} class="align-middle form-check-input" name="theme" id="themeLight" type="radio">`
-    self._view.theme.dark = yo`<input onchange=${onswitch2darkTheme} class="align-middle form-check-input" name="theme" id="themeDark" type="radio">`
-    self._view.theme.clean = yo`<input onchange=${onswitch2cleanTheme} class="align-middle form-check-input" name="theme" id="themeClean" type="radio">`
-    self._view.theme[self.data.currentTheme].setAttribute('checked', 'checked')
+    // **** check next line
+    // loop through the themes array and put in the info - the onswitch2LightTheme needs updating
+    self._view.themes = styleGuide.getThemes()
+    self._view.themesCheckBoxes = this.createThemeCheckies()
+    // self._view.theme.light = yo`<input onchange=${onswitchTheme()} class="align-middle form-check-input" name="theme" id="themeLight" type="radio">`
+    // self._view.theme.dark = yo`<input onchange=${onswitch2darkTheme} class="align-middle form-check-input" name="theme" id="themeDark" type="radio">`
+    // self._view.theme.clean = yo`<input onchange=${onswitch2cleanTheme} class="align-middle form-check-input" name="theme" id="themeClean" type="radio">`
+
+    // if the current theme is in the list make it checked - if it doesn't exist in the theme obj don't check anything
+    if( styleGuide.isThere(self.data.currentTheme)){
+      // TODO this belongs in the function createCheckies
+      // self._view.themes[self.data.currentTheme].setAttribute('checked', 'checked')
+    }
+    
 
     self._view.config.homePage = yo`
     <div class="${css.info} card">
@@ -128,20 +169,7 @@ module.exports = class SettingsTab {
       <div class="${css.info} card">
         <div class="card-body">
           <h6 class="${css.title} card-title">Themes</h6>
-          <div class="card-text">
-            <div class="${css.frow} form-check ${css.crow}">
-              ${self._view.theme.light}
-              <label class="form-check-label" for="themeLight">Light Theme</label>
-            </div>
-            <div class="${css.frow} form-check ${css.crow}">
-              ${self._view.theme.dark}
-              <label class="form-check-label" for="themeDark">Dark Theme</label>
-            </div>
-            <div class="${css.frow} form-check ${css.crow}">
-              ${self._view.theme.clean}
-              <label class="form-check-label" for="themeClean">Clean Theme</label>
-            </div>
-          </div>
+            ${self._view.themesCheckBoxes}
         </div>
       </div>`
     self._view.el = yo`
@@ -158,18 +186,20 @@ module.exports = class SettingsTab {
     function onchangeOption (event) {
       self._deps.config.set('settings/always-use-vm', !self._deps.config.get('settings/always-use-vm'))
     }
-    function onswitch2darkTheme (event) {
-      styleGuide.switchTheme('dark')
+    function onswitchTheme (event, name) {
+      styleGuide.switchTheme(name)
     }
-    function onswitch2lightTheme (event) {
-      styleGuide.switchTheme('light')
-    }
-    function onswitch2cleanTheme (event) {
-      styleGuide.switchTheme('clean')
-    }
+    // function onswitch2lightTheme (event) {
+    //   styleGuide.switchTheme('light')
+    // }
+    // function onswitch2cleanTheme (event) {
+    //   styleGuide.switchTheme('clean')
+    // }
     function onchangePersonal (event) {
       self._deps.config.set('settings/personal-mode', !self._deps.config.get('settings/personal-mode'))
     }
+    // what is this line doing? I mean why is it hitting this here?  after the commented out lines above
+    // or why hit switch theme now
     styleGuide.switchTheme()
     return self._view.el
   }
