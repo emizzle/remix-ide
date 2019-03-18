@@ -33,7 +33,6 @@ module.exports = class SettingsTab {
       el: null,
       optionVM: null, personal: null, warnPersonalMode: null, generateContractMetadata: null,
       pluginInput: null, versionSelector: null, version: null,
-      themes: null,
       plugins: {},
       config: {
         general: null, themes: null,
@@ -43,8 +42,6 @@ module.exports = class SettingsTab {
     self.data = {}
     self.event = new EventManager()
     self._components.themeStorage = new Storage('style:')
-    // TODO check to make sure that the current theme exists before saving it in self.data
-    self.data.currentTheme = self._components.themeStorage.get('theme') || 'basic'
   }
   profile () {
     return {
@@ -60,25 +57,27 @@ module.exports = class SettingsTab {
   createThemeCheckies () {
     // does the list of themes exist
     const self = this
-    
-    if (self._view.themes) {
+    let currentTheme = styleGuide.currentTheme()
+    let themes = styleGuide.getThemes()
+    function onswitchTheme (event, name) {
+      styleGuide.switchTheme(name)
+    }
+    if (themes) {
+
       return yo`<div class="card-text themes-container">
-        ${self._view.themes.map(function (aTheme) {
-          return yo`<div class="${css.frow} form-check ${css.crow}">
-          <input onchange=${onswitchTheme(aTheme.name)} class="align-middle form-check-input" name="${aTheme.name}" id="${aTheme.name}" type="radio">
-          <label class="form-check-label" for="themeLight">${aTheme.name} (${aTheme.quality})</label>
+        ${themes.map(function (aTheme) {
+          const selected = (currentTheme.name === aTheme.name) ? 'checked' : ''
+          let el =  yo`<div class="${css.frow} form-check ${css.crow}">
+          <input type="radio" onchange=${(event) => { onswitchTheme(event, aTheme.name) }} class="align-middle form-check-input" name="theme" id="${aTheme.name}"   >
+          <label class="form-check-label" for="${aTheme.name}">${aTheme.name} (${aTheme.quality})</label>
         </div>`
+        if (currentTheme.name === aTheme.name) el.querySelector('input').setAttribute('checked', 'checked')
+        return el
         })}
       </div>`
     }
   }
-  isThere (name) {
-    const self = this
-    // its complaining that it cant find self._view.themes  ( uncomment next 2 lines)
-    return self._view.themes.find(obj => {
-      return obj.name === name
-    })
-  }
+
   render () {
     const self = this
     if (self._view.el) return self._view.el
@@ -186,9 +185,7 @@ module.exports = class SettingsTab {
     function onchangeOption (event) {
       self._deps.config.set('settings/always-use-vm', !self._deps.config.get('settings/always-use-vm'))
     }
-    function onswitchTheme (event, name) {
-      styleGuide.switchTheme(name)
-    }
+
     // function onswitch2lightTheme (event) {
     //   styleGuide.switchTheme('light')
     // }
